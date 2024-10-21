@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        body {
+            background-color: #FFF;
+        }
+
+        canvas {
+            border: 1px solid #000;
+            display: block;
+            margin: 0 auto;
+        }
+
+        #scoreBoard {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 18px;
+            color: #000;
+        }
+
+        #startButton {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: red;
+            font-size: 24px;
+            padding: 10px 20px;
+        }
+    </style>
+</head>
+<body>
+<div id="scoreBoard">Score: 0 High Score: 0</div>
+<canvas id="gameCanvas" width="400" height="400"></canvas>
+<button id="startButton" onclick="startGame()">Start Game</button>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const snakeSize = 20;
+    const gridSize = canvas.width / snakeSize;
+    let snake = [];
+    let food = { x: 0, y: 0 };
+    let dx = snakeSize;
+    let dy = 0;
+    let gameLoopInterval;
+    let speed = 100;
+    let score = 0;
+    let highScore = 0;
+    let gameStarted = false;
+    let snakeLengthMultiplier = 1;
+
+    let targetX, targetY; // Mouse position
+
+    // Load the food image
+    const foodImage = new Image();
+    foodImage.src = "OIP.jpg";  // Set the path to your food image here
+
+    // Initialize the game and set up the snake and food
+    function init() {
+        snake = [{ x: 8 * snakeSize, y: 8 * snakeSize }]; // Initialize snake with one segment at a fixed position
+        createFood(); // Create the first food item
+        draw(); // Draw the initial state of the game
+    }
+
+    // Draw function to update the canvas
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas before redrawing
+        drawSnake();  // Draw snake
+        drawFood();   // Draw food
+        updateScore(); // Update score
+    }
+
+    // Draw the snake
+    function drawSnake() {
+        ctx.fillStyle = "blue";
+        for (let i = 0; i < snake.length; i++) {
+            ctx.fillRect(snake[i].x, snake[i].y, snakeSize, snakeSize);
+            ctx.strokeStyle = "#000";
+            ctx.strokeRect(snake[i].x, snake[i].y, snakeSize, snakeSize);
+        }
+    }
+
+    // Draw the food using the loaded image
+    function drawFood() {
+        if (foodImage.complete) {
+            ctx.drawImage(foodImage, food.x, food.y, snakeSize, snakeSize);
+        } else {
+            foodImage.onload = () => {
+                ctx.drawImage(foodImage, food.x, food.y, snakeSize, snakeSize);
+            };
+        }
+    }
+
+    // Create food at a random location on the grid
+    function createFood() {
+        food.x = Math.floor(Math.random() * gridSize) * snakeSize;
+        food.y = Math.floor(Math.random() * gridSize) * snakeSize;
+    }
+
+    // Game loop to update the snake's position and check for collisions
+    function gameLoop() {
+        if (!gameStarted) return;
+
+        // Calculate direction toward the target (mouse)
+        let head = snake[0];
+        let angle = Math.atan2(targetY - head.y, targetX - head.x);
+        dx = Math.cos(angle) * snakeSize;
+        dy = Math.sin(angle) * snakeSize;
+
+        head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+        // Check if the snake is close enough to the food
+        const distanceToFood = Math.sqrt((head.x - food.x) ** 2 + (head.y - food.y) ** 2);
+        if (distanceToFood < snakeSize) {  // Adjust this threshold as needed
+            snake.unshift(head); // Grow the snake by adding the new head
+            createFood();  // Generate new food after eating
+            score++;  // Increment score
+            if (score > highScore) {
+                highScore = score; // Update high score if needed
+            }
+            if (score % 5 === 0) {
+                snakeLengthMultiplier++;
+            }
+        } else {
+            snake.pop();  // Move the snake by removing the tail
+            snake.unshift(head);  // Add the new head
+        }
+
+        // Check if the snake hits the walls
+        if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
+            clearInterval(gameLoopInterval); // Stop the game loop
+            alert("Game Over! Press OK to restart.");
+            score = 0;
+            snakeLengthMultiplier = 1;
+            init();  // Restart the game
+            return;
+        }
+
+        draw();  // Redraw the game elements after each loop iteration
+    }
+
+    // Track mouse position and update target coordinates
+    canvas.addEventListener("mousemove", (event) => {
+        const rect = canvas.getBoundingClientRect();
+        targetX = event.clientX - rect.left;
+        targetY = event.clientY - rect.top;
+    });
+
+    // Start the game
+    function startGame() {
+        if (gameStarted) return;
+        gameStarted = true;
+        init(); // Initialize the game
+        gameLoopInterval = setInterval(gameLoop, speed);  // Start the game loop
+    }
+
+    // Update score and display it
+    function updateScore() {
+        const scoreBoard = document.getElementById("scoreBoard");
+        scoreBoard.textContent = `Score: ${score} High Score: ${highScore} Snake Length Multiplier: ${snakeLengthMultiplier}`;
+    }
+
+</script>
+</body>
+</html>
