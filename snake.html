@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snake Game</title>
+<style>
+    body {
+        background-color: #FFF;
+    }
+
+    canvas {
+        border: 1px solid #000;
+        display: block;
+        margin: 0 auto;
+    }
+
+    #scoreBoard {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 18px;
+        color: #000;
+    }
+
+    #startButton {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: red;
+        font-size: 24px;
+        padding: 10px 20px;
+    }
+</style>
+</head>
+<body>
+<div id="scoreBoard">Score: 0 High Score: 0</div>
+<canvas id="gameCanvas" width="400" height="400"></canvas>
+<button id="startButton" onclick="startGame()">Start Game</button>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const snakeSize = 20;
+    const gridSize = canvas.width / snakeSize;
+    let snake = [];
+    let food = { x: 0, y: 0 };
+    let dx = snakeSize;
+    let dy = 0;
+    let gameLoopInterval;
+    let speed = 100;
+    let score = 0;
+    let highScore = 0;
+    let gameStarted = false;
+    let snakeLengthMultiplier = 1;
+
+    function init() {
+        snake = [{ x: 8 * snakeSize, y: 8 * snakeSize }];
+        createFood();
+        draw();
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawSnake();
+        drawFood();
+        updateScore();
+    }
+
+    function drawSnake() {
+        ctx.fillStyle = "blue";
+        for (let i = 0; i < snake.length; i++) {
+            ctx.fillRect(snake[i].x, snake[i].y, snakeSize, snakeSize);
+            ctx.strokeStyle = "#000";
+            ctx.strokeRect(snake[i].x, snake[i].y, snakeSize, snakeSize);
+        }
+    }
+
+    function drawFood() {
+        ctx.fillStyle = "#FF0000";
+        ctx.fillRect(food.x, food.y, snakeSize, snakeSize);
+    }
+
+    function createFood() {
+        food.x = Math.floor(Math.random() * gridSize) * snakeSize;
+        food.y = Math.floor(Math.random() * gridSize) * snakeSize;
+    }
+
+    function gameLoop() {
+        if (!gameStarted) return;
+
+        const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+        if (head.x === food.x && head.y === food.y) {
+            snake.unshift(head);
+            createFood();
+            score++;
+            if (score > highScore) {
+                highScore = score;
+            }
+            if (score % 5 === 0) {
+                snakeLengthMultiplier++;
+            }
+        } else {
+            snake.pop();
+            snake.unshift(head);
+        }
+
+        if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
+            clearInterval(gameLoopInterval);
+            alert("Game Over! Press OK to restart.");
+            score = 0;
+            snakeLengthMultiplier = 1;
+            init();
+            return;
+        }
+
+        draw();
+    }
+
+    document.addEventListener("keydown", changeDirection);
+
+    function changeDirection(event) {
+        if (!gameStarted) return;
+
+        const keyPressed = event.key;
+
+        if (keyPressed === "w" && dy !== snakeSize) {
+            dx = 0;
+            dy = -snakeSize;
+        } else if (keyPressed === "a" && dx !== snakeSize) {
+            dx = -snakeSize;
+            dy = 0;
+        } else if (keyPressed === "s" && dy !== -snakeSize) {
+            dx = 0;
+            dy = snakeSize;
+        } else if (keyPressed === "d" && dx !== -snakeSize) {
+            dx = snakeSize;
+            dy = 0;
+        }
+    }
+
+    function startGame() {
+        if (gameStarted) return;
+        gameStarted = true;
+        init();
+        gameLoopInterval = setInterval(gameLoop, speed);
+    }
+
+    function updateScore() {
+        const scoreBoard = document.getElementById("scoreBoard");
+        scoreBoard.textContent = `Score: ${score} High Score: ${highScore} Snake Length Multiplier: ${snakeLengthMultiplier}`;
+    }
+
+</script>
+</body>
+</html>
+
